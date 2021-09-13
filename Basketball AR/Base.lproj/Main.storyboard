@@ -21,6 +21,7 @@
                                 <gestureRecognizers/>
                                 <connections>
                                     <outletCollection property="gestureRecognizers" destination="YR7-tF-vWG" appends="YES" id="67M-eL-nEi"/>
+                                    <outletCollection property="gestureRecognizers" destination="8bt-D2-zzF" appends="YES" id="Erk-40-RGg"/>
                                 </connections>
                             </arscnView>
                         </subviews>
@@ -43,6 +44,12 @@
                         <action selector="userTap:" destination="BV1-FR-VrT" id="abJ-tM-Qcq"/>
                     </connections>
                 </tapGestureRecognizer>
+                <panGestureRecognizer delaysTouchesBegan="YES" minimumNumberOfTouches="1" maximumNumberOfTouches="1" id="8bt-D2-zzF">
+                    <scrollTypes key="allowedScrollTypesMask" continuous="YES"/>
+                    <connections>
+                        <action selector="userPan:" destination="BV1-FR-VrT" id="Xcn-OX-7ao"/>
+                    </connections>
+                </panGestureRecognizer>
             </objects>
             <point key="canvasLocation" x="35" y="40"/>
         </scene>
