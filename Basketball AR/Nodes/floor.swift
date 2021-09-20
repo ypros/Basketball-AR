@@ -21,10 +21,12 @@ final class Floor: SCNNode {
     }
     
     private func initialisation() {
-        let floor = SCNPlane(width: 10, height: 10)
-        floor.firstMaterial?.diffuse.contents = UIImage(named: "floorTexture")
+        let floor = SCNPlane(width: 50, height: 50)
+        //floor.firstMaterial?.diffuse.contents = UIImage(named: "floorTexture")
         
         self.geometry = floor
+        self.opacity = 0
+        
         self.position = SCNVector3(0, -2.05, 1.5)
         self.eulerAngles.x -= .pi / 2
         // Add Physics and BitMasks for the Floor

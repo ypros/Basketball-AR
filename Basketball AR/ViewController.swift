@@ -12,14 +12,17 @@ import ARKit
 class ViewController: UIViewController, ARSCNViewDelegate, SCNPhysicsContactDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
+    @IBOutlet weak var stackGroup: UIStackView!
+    @IBOutlet weak var textLabel: UILabel!
     @IBOutlet weak var powerLabel: UILabel!
     @IBOutlet weak var distanceLabel: UILabel!
     
-    var score: Int = 0
+    private var score: Int = 0
     private var swipeStartPoint = CGPoint()
     private var swipeEndPoint = CGPoint()
     private var shootingPower: Float = 0
-    private var counterPosition = SCNVector3()
+    private var shootingDistance: Float = 0
+    private var basketPosition = SCNVector3()
     
     let configuration = ARWorldTrackingConfiguration()
     var isBasketSet = false {
@@ -66,6 +69,15 @@ class ViewController: UIViewController, ARSCNViewDelegate, SCNPhysicsContactDele
         sceneView.session.pause()
     }
     
+    private func updateUI() {
+        textLabel.isHidden = isBasketSet
+        stackGroup.isHidden = !isBasketSet
+        
+        powerLabel.text = "\(String(format: "%.1f", shootingPower * 5)) %"
+        distanceLabel.text = "\(String(format: "%.1f", shootingDistance)) m"
+
+    }
+    
     private func getBasketNode() -> SCNNode {
         let scene = SCNScene(named: "Basket.scn", inDirectory: "art.scnassets")!
         
@@ -94,10 +106,10 @@ class ViewController: UIViewController, ARSCNViewDelegate, SCNPhysicsContactDele
         
         ballNode.physicsBody?.applyForce(force, asImpulse: true)
         ballNode.simdTransform = cameraTransform
-        
-        ballNode.scale = SCNVector3(0.5, 0.5, 0.5)
 
-        ballNode.setDistance(from: counterPosition)
+        ballNode.setDistance(from: basketPosition)
+        
+        shootingDistance = ballNode.distance
 
         return ballNode
     }
@@ -164,50 +176,51 @@ class ViewController: UIViewController, ARSCNViewDelegate, SCNPhysicsContactDele
     
     // MARK: - Actions
     @IBAction func userTap(_ sender: UITapGestureRecognizer) {
-        
-        print("ser taped")
-        
+                
         if isBasketSet {
-            	
-            //sceneView.scene.rootNode.addChildNode(getBallNode())
-            
+            return
         }
-        else {
-            let location = sender.location(in: sceneView)
-            guard let query = sceneView.raycastQuery(from: location, allowing: .existingPlaneGeometry, alignment: .vertical) else {
-                return
-            }
-            
-            let results = sceneView.session.raycast(query)
-            guard let hitResult = results.first else {
-               print("No surface found")
-               return
-            }
-            
-            
-            guard let anchor = hitResult.anchor as? ARPlaneAnchor, anchor.alignment == .vertical else {
-                return
-            }
-            
-            let basketNode = getBasketNode()
-            basketNode.simdTransform = hitResult.worldTransform
-            basketNode.eulerAngles.x -= .pi/2
-            
-            let counter = Counter()
-            counterPosition = counter.position
-            
-            basketNode.addChildNode(counter)
-            //basketNode.addChildNode(Floor())
-            
-            sceneView.scene.rootNode.addChildNode(basketNode)
-            
-            isBasketSet.toggle()
+        
+        let location = sender.location(in: sceneView)
+        guard let query = sceneView.raycastQuery(from: location, allowing: .existingPlaneGeometry, alignment: .vertical) else {
+            return
         }
+        
+        let results = sceneView.session.raycast(query)
+        guard let hitResult = results.first else {
+            print("No surface found")
+            return
+        }
+        
+        
+        guard let anchor = hitResult.anchor as? ARPlaneAnchor, anchor.alignment == .vertical else {
+            return
+        }
+        
+        let basketNode = getBasketNode()
+        basketNode.simdTransform = hitResult.worldTransform
+        basketNode.eulerAngles.x -= .pi/2
+        
+        basketPosition = basketNode.position
+        
+        basketNode.addChildNode(Counter())
+        basketNode.addChildNode(Floor())
+        
+        sceneView.scene.rootNode.addChildNode(basketNode)
+        
+        isBasketSet.toggle()
+        
+        updateUI()
+        
     }
-
+    
     //calculating throwing power
     @IBAction func userPan(_ sender: UIPanGestureRecognizer) {
-
+        
+        if !isBasketSet {
+            return
+        }
+        
         if sender.state == .began {
             swipeStartPoint = sender.location(in: sceneView)
         }
@@ -219,6 +232,8 @@ class ViewController: UIViewController, ARSCNViewDelegate, SCNPhysicsContactDele
             guard let newBall = getBallNode() else { return }
             sceneView.scene.rootNode.addChildNode(newBall)
             
+            updateUI()
+            
         }
     }
     
@@ -227,14 +242,11 @@ class ViewController: UIViewController, ARSCNViewDelegate, SCNPhysicsContactDele
         guard let scoreTextNode = sceneView.scene.rootNode.childNode(withName: "text", recursively: true) else { return }
         
         if let text = scoreTextNode.geometry as? SCNText {
-            if score == 99 {
-                text.string = "!!! WINNER !!!"
+            if score < 20 {
+                text.string = "SCORE \(String(format: "%02d", score))"
             }
-            if score < 10 {
-                text.string = "SCORE 0\(score)"
-            }
-            if score > 9 {
-                text.string = "SCORE \(score)"
+            else {
+                text.string = "!WINNER!"
             }
             
             score += points
