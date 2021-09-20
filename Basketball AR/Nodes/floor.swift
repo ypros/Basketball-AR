@@ -21,7 +21,7 @@ final class Floor: SCNNode {
     }
     
     private func initialisation() {
-        let floor = SCNPlane(width: 25, height: 25)
+        let floor = SCNPlane(width: 10, height: 10)
         floor.firstMaterial?.diffuse.contents = UIImage(named: "floorTexture")
         
         self.geometry = floor

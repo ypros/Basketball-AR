@@ -9,10 +9,17 @@ import UIKit
 import SceneKit
 import ARKit
 
-class ViewController: UIViewController, ARSCNViewDelegate {
+class ViewController: UIViewController, ARSCNViewDelegate, SCNPhysicsContactDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
+    @IBOutlet weak var powerLabel: UILabel!
+    @IBOutlet weak var distanceLabel: UILabel!
+    
     var score: Int = 0
+    private var swipeStartPoint = CGPoint()
+    private var swipeEndPoint = CGPoint()
+    private var shootingPower: Float = 0
+    private var counterPosition = SCNVector3()
     
     let configuration = ARWorldTrackingConfiguration()
     var isBasketSet = false {
@@ -24,13 +31,18 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             sceneView.session.run(configuration, options: .removeExistingAnchors)
         }
     }
-    var swipeStartPoint = CGPoint()
+    
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
         // Set the view's delegate
         sceneView.delegate = self
+        
+        sceneView.scene.physicsWorld.contactDelegate = self
+        // Setup the scene light
+        sceneView.autoenablesDefaultLighting = true
         
         // Show statistics such as fps and timing information
         //sceneView.showsStatistics = true
@@ -40,7 +52,6 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-
         //Setting up configuration to auto detect vertical and horizontal planes
         configuration.planeDetection = [.horizontal, .vertical]
 
@@ -59,50 +70,36 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         let scene = SCNScene(named: "Basket.scn", inDirectory: "art.scnassets")!
         
         let basketNode = scene.rootNode.clone()
+        
         basketNode.physicsBody = SCNPhysicsBody(type: .static, shape: SCNPhysicsShape(node: basketNode, options: [SCNPhysicsShape.Option.type: SCNPhysicsShape.ShapeType.concavePolyhedron]))
         basketNode.eulerAngles.x -= .pi/2
+        
+        basketNode.physicsBody?.categoryBitMask = 2 //basket
         
         return basketNode
     }
     
-    private func getBallNode(_ power: Float) -> SCNNode {
-        let ball = SCNSphere(radius: 0.1)
-        ball.firstMaterial?.diffuse.contents = UIImage(named: "ballTexture")
+    private func getBallNode() -> SCNNode? {
+        guard let frame = sceneView.session.currentFrame else { return nil }
+        // Get camera transform
+        let cameraTransform = frame.camera.transform
+        let matrixCameraTransform = SCNMatrix4(cameraTransform)
+
+        let x = -matrixCameraTransform.m31 * shootingPower
+        let y = -matrixCameraTransform.m32 * shootingPower
+        let z = -matrixCameraTransform.m33 * shootingPower
+        let force = SCNVector3(x, y, z)
         
-        let ballNode = SCNNode(geometry: ball)
+        let ballNode = Ball()
         
-        if let frame = sceneView.session.currentFrame {
-            ballNode.simdTransform = frame.camera.transform
-        }
+        ballNode.physicsBody?.applyForce(force, asImpulse: true)
+        ballNode.simdTransform = cameraTransform
         
-        let matrix = SCNMatrix4(ballNode.simdTransform)
-        let x = (matrix.m31) * power
-        let y = (matrix.m32) * power
-        let z = matrix.m33 * power
-        let forceVector = SCNVector3(-x, -y, -z)
-        
-        ballNode.physicsBody = SCNPhysicsBody(type: .dynamic, shape: SCNPhysicsShape(node: ballNode))
-        ballNode.physicsBody?.applyForce(forceVector, asImpulse: true)
-        
+        ballNode.scale = SCNVector3(0.5, 0.5, 0.5)
+
+        ballNode.setDistance(from: counterPosition)
+
         return ballNode
-    }
-    
-    private func getForceVector() -> SCNVector3 {
-        
-        guard let frame = sceneView.session.currentFrame  else {
-            return SCNVector3()
-        }
-        
-        let matrix = SCNMatrix4(frame.camera.transform)
-        
-        let ortoX = (matrix.m23 * matrix.m12 - matrix.m13 + matrix.m22) / (matrix.m11 * matrix.m22 - matrix.m21 * matrix.m12 )
-        
-        let ortoY = (matrix.m23 * matrix.m11 - matrix.m13 + matrix.m21) / (matrix.m12 * matrix.m21 - matrix.m22 * matrix.m11 )
-        
-        let ortoZ: Float = 1
-        
-        return SCNVector3(ortoX, ortoY, ortoZ)
-        
     }
     
     
@@ -146,8 +143,29 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         updatePlaneNode(node, for: planeAnchor)
     }
     
+    
+    func physicsWorld(_ world: SCNPhysicsWorld, didEnd contact: SCNPhysicsContact) {
+        guard let bitMaskA = contact.nodeA.physicsBody?.categoryBitMask,
+              let bitMaskB = contact.nodeB.physicsBody?.categoryBitMask
+        else { return }
+        
+        if bitMaskA + bitMaskB != 1 + 4 {
+            return
+        }
+    
+        let contactNode = bitMaskA == 1 ? contact.nodeA : contact.nodeB
+        guard let ball = contactNode as? Ball else { return }
+        
+        if !ball.scored {
+            addScore(ball.points)
+            ball.scored.toggle()
+        }
+    }
+    
     // MARK: - Actions
     @IBAction func userTap(_ sender: UITapGestureRecognizer) {
+        
+        print("ser taped")
         
         if isBasketSet {
             	
@@ -175,39 +193,38 @@ class ViewController: UIViewController, ARSCNViewDelegate {
             basketNode.simdTransform = hitResult.worldTransform
             basketNode.eulerAngles.x -= .pi/2
             
+            let counter = Counter()
+            counterPosition = counter.position
+            
+            basketNode.addChildNode(counter)
+            //basketNode.addChildNode(Floor())
+            
             sceneView.scene.rootNode.addChildNode(basketNode)
             
-            isBasketSet = true
+            isBasketSet.toggle()
         }
     }
 
-                    
+    //calculating throwing power
     @IBAction func userPan(_ sender: UIPanGestureRecognizer) {
 
         if sender.state == .began {
             swipeStartPoint = sender.location(in: sceneView)
         }
         if sender.state == .ended {
-            let swipeEndPoint = sender.location(in: sceneView)
+            swipeEndPoint = sender.location(in: sceneView)
             
+            setShootingPower()
             
-          //  if isBasketSet {
+            guard let newBall = getBallNode() else { return }
+            sceneView.scene.rootNode.addChildNode(newBall)
             
-            let swipePower = Float(swipeStartPoint.y - swipeEndPoint.y) / Float(sceneView.frame.height)
-            let power = 25 * swipePower
-            
-            sceneView.scene.rootNode.addChildNode(getBallNode(power))
-            
-            addScore()
-                //print("start", swipeStartPoint)
-               // print("end", swipeEndPoint)
-                
-         //   }
         }
     }
     
-    func addScore() {
-        guard let scoreTextNode = sceneView.scene.rootNode.childNode(withName: "text node", recursively: true) else { return }
+    //adding score points and updating score panel
+    private func addScore(_ points: Int) {
+        guard let scoreTextNode = sceneView.scene.rootNode.childNode(withName: "text", recursively: true) else { return }
         
         if let text = scoreTextNode.geometry as? SCNText {
             if score == 99 {
@@ -220,8 +237,16 @@ class ViewController: UIViewController, ARSCNViewDelegate {
                 text.string = "SCORE \(score)"
             }
             
-            score += 1
+            score += points
         }
+    }
+    
+    //setting shooting power by swipe distance
+    private func setShootingPower() {
+        
+        let swipePower = Float(swipeStartPoint.y - swipeEndPoint.y) / Float(sceneView.frame.height)
+        shootingPower = 20 * (0.1 + swipePower)
+    
     }
 
     
