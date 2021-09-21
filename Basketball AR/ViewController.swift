@@ -12,29 +12,68 @@ import ARKit
 class ViewController: UIViewController, ARSCNViewDelegate, SCNPhysicsContactDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
-    @IBOutlet weak var stackGroup: UIStackView!
+    @IBOutlet weak var groupStack: UIStackView!
+    @IBOutlet weak var gameMenuStack: UIStackView!
     @IBOutlet weak var textLabel: UILabel!
     @IBOutlet weak var powerLabel: UILabel!
     @IBOutlet weak var distanceLabel: UILabel!
+    @IBOutlet weak var startNewGameButton: UIButton!
+    @IBOutlet weak var replaceTheBasketButton: UIButton!
     
-    private var score: Int = 0
     private var swipeStartPoint = CGPoint()
     private var swipeEndPoint = CGPoint()
     private var shootingPower: Float = 0
     private var shootingDistance: Float = 0
     private var basketPosition = SCNVector3()
     
-    let configuration = ARWorldTrackingConfiguration()
-    var isBasketSet = false {
+    private let configuration = ARWorldTrackingConfiguration()
+    
+    private var isGameOver = false {
         didSet {
-            //Setting up configuration detection off
-            configuration.planeDetection = []
+            DispatchQueue.main.async {
+                self.updateUI()
+            }
+        }
+    }
+    
+    private var isBasketSet = false {
+        didSet {
+            //Setting up configuration detection off|on
+            configuration.planeDetection = isBasketSet ? [] : [.vertical]
 
             // Run the view's session
             sceneView.session.run(configuration, options: .removeExistingAnchors)
         }
     }
     
+    private var score: Int = 0 {
+        didSet {
+            if score == 0 {
+                isGameOver = false
+            }
+            if score > 30 {
+                isGameOver = true
+            }
+            
+            DispatchQueue.main.async {
+                self.updateScorePanel()
+            }
+        }
+    }
+    
+    private var ballNodes = [SCNNode]() {
+        didSet {
+            if ballNodes.count > 9 {
+                DispatchQueue.main.async {
+                    // Delete the ball from scene and it's Texture
+                    let ball = self.ballNodes.removeFirst()
+                    ball.geometry?.firstMaterial?.normal.contents = nil
+                    ball.geometry?.firstMaterial?.diffuse.contents = nil
+                    ball.removeFromParentNode()
+                }
+            }
+        }
+    }
     
     
     override func viewDidLoad() {
@@ -56,7 +95,7 @@ class ViewController: UIViewController, ARSCNViewDelegate, SCNPhysicsContactDele
         super.viewWillAppear(animated)
         
         //Setting up configuration to auto detect vertical and horizontal planes
-        configuration.planeDetection = [.horizontal, .vertical]
+        configuration.planeDetection = [.vertical]
 
         // Run the view's session
         sceneView.session.run(configuration)
@@ -71,11 +110,46 @@ class ViewController: UIViewController, ARSCNViewDelegate, SCNPhysicsContactDele
     
     private func updateUI() {
         textLabel.isHidden = isBasketSet
-        stackGroup.isHidden = !isBasketSet
+        groupStack.isHidden = !isBasketSet
         
         powerLabel.text = "\(String(format: "%.1f", shootingPower * 5)) %"
         distanceLabel.text = "\(String(format: "%.1f", shootingDistance)) m"
+        
+        gameMenuStack.isHidden = !isGameOver
+        
+        if isGameOver {
+            
+            startNewGameButton.layer.cornerRadius = 20
+            startNewGameButton.layer.masksToBounds = true
+            
+            replaceTheBasketButton.layer.cornerRadius = 20
+            replaceTheBasketButton.layer.masksToBounds = true
+        }
 
+    }
+
+    
+    //adding score points and updating score panel
+    private func updateScorePanel() {
+        
+        guard let scoreTextNode = sceneView.scene.rootNode.childNode(withName: "text", recursively: true) else { return }
+        
+        if let text = scoreTextNode.geometry as? SCNText {
+            if isGameOver {
+                text.string = "!WINNER!"
+            }
+            else {
+                text.string = "SCORE \(String(format: "%02d", score))"
+            }
+        }
+    }
+    
+    //setting shooting power by swipe distance
+    private func setShootingPower() {
+        
+        let swipePower = Float(swipeStartPoint.y - swipeEndPoint.y) / Float(sceneView.frame.height)
+        shootingPower = 20 * (0.1 + swipePower)
+    
     }
     
     private func getBasketNode() -> SCNNode {
@@ -110,6 +184,8 @@ class ViewController: UIViewController, ARSCNViewDelegate, SCNPhysicsContactDele
         ballNode.setDistance(from: basketPosition)
         
         shootingDistance = ballNode.distance
+        
+        ballNodes.append(ballNode)
 
         return ballNode
     }
@@ -169,10 +245,12 @@ class ViewController: UIViewController, ARSCNViewDelegate, SCNPhysicsContactDele
         guard let ball = contactNode as? Ball else { return }
         
         if !ball.scored {
-            addScore(ball.points)
+            score += ball.points
             ball.scored.toggle()
         }
     }
+    
+    
     
     // MARK: - Actions
     @IBAction func userTap(_ sender: UITapGestureRecognizer) {
@@ -236,31 +314,22 @@ class ViewController: UIViewController, ARSCNViewDelegate, SCNPhysicsContactDele
             
         }
     }
-    
-    //adding score points and updating score panel
-    private func addScore(_ points: Int) {
-        guard let scoreTextNode = sceneView.scene.rootNode.childNode(withName: "text", recursively: true) else { return }
+    @IBAction func startNewGameAction(_ sender: UIButton) {
+        ballNodes.forEach{ ball in ball.removeFromParentNode() }
+        ballNodes.removeAll()
         
-        if let text = scoreTextNode.geometry as? SCNText {
-            if score < 20 {
-                text.string = "SCORE \(String(format: "%02d", score))"
-            }
-            else {
-                text.string = "!WINNER!"
-            }
-            
-            score += points
+        score = 0
+    }
+    
+    @IBAction func replaceTheBasketAction(_ sender: UIButton) {
+        
+        sceneView.scene.rootNode.enumerateChildNodes{ (node, end) in
+            node.removeFromParentNode()
         }
-    }
-    
-    //setting shooting power by swipe distance
-    private func setShootingPower() {
         
-        let swipePower = Float(swipeStartPoint.y - swipeEndPoint.y) / Float(sceneView.frame.height)
-        shootingPower = 20 * (0.1 + swipePower)
-    
+        ballNodes.removeAll()
+        
+        isBasketSet = false
+        score = 0
     }
-
-    
-    
 }

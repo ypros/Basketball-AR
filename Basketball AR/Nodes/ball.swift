@@ -15,7 +15,8 @@ final class Ball: SCNNode {
     var points: Int = 2
     var distance: Float = 0 {
         didSet {
-            self.points = self.distance > 6.0 ? 3 : 2
+            self.points = self.distance > 2.0 ? 3 : 2
+            print(self.distance)
         }
     }
     

@@ -89,24 +89,62 @@
                                     <constraint firstAttribute="height" relation="greaterThanOrEqual" constant="110" id="Rrw-E6-pno"/>
                                 </constraints>
                             </stackView>
+                            <stackView hidden="YES" opaque="NO" contentMode="scaleToFill" axis="vertical" alignment="center" spacing="60" translatesAutoresizingMaskIntoConstraints="NO" id="rKZ-74-nE1">
+                                <rect key="frame" x="0.0" y="358" width="414" height="180"/>
+                                <subviews>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="OPz-g0-EIm">
+                                        <rect key="frame" x="107" y="0.0" width="200" height="60"/>
+                                        <color key="backgroundColor" red="0.99999600649999998" green="1" blue="1" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="200" id="NYI-XI-Maf"/>
+                                            <constraint firstAttribute="height" constant="60" id="moe-93-6BJ"/>
+                                        </constraints>
+                                        <fontDescription key="fontDescription" type="boldSystem" pointSize="20"/>
+                                        <state key="normal" title="Start new game"/>
+                                        <connections>
+                                            <action selector="startNewGameAction:" destination="BV1-FR-VrT" eventType="touchUpInside" id="Q8G-Hn-XOZ"/>
+                                        </connections>
+                                    </button>
+                                    <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Rz9-bP-OGW">
+                                        <rect key="frame" x="107" y="120" width="200" height="60"/>
+                                        <color key="backgroundColor" red="0.99999600649999998" green="1" blue="1" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="200" id="5is-DQ-PNU"/>
+                                            <constraint firstAttribute="height" constant="60" id="odr-8l-8Jr"/>
+                                        </constraints>
+                                        <fontDescription key="fontDescription" type="boldSystem" pointSize="20"/>
+                                        <state key="normal" title="Replace the basket"/>
+                                        <connections>
+                                            <action selector="replaceTheBasketAction:" destination="BV1-FR-VrT" eventType="touchUpInside" id="YKS-4i-tPz"/>
+                                        </connections>
+                                    </button>
+                                </subviews>
+                            </stackView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="fQZ-KI-GVf"/>
                         <color key="backgroundColor" systemColor="systemBackgroundColor"/>
                         <constraints>
                             <constraint firstItem="1Jn-PA-wRa" firstAttribute="leading" secondItem="U0K-SW-4ec" secondAttribute="leading" id="0vo-fb-cqF"/>
                             <constraint firstItem="BrB-h1-WRS" firstAttribute="leading" secondItem="U0K-SW-4ec" secondAttribute="leading" id="GsS-dJ-CKf"/>
+                            <constraint firstItem="rKZ-74-nE1" firstAttribute="centerY" secondItem="U0K-SW-4ec" secondAttribute="centerY" id="Ljy-XE-za2"/>
                             <constraint firstItem="1Jn-PA-wRa" firstAttribute="bottom" secondItem="U0K-SW-4ec" secondAttribute="bottom" id="MRK-8G-nro"/>
+                            <constraint firstItem="fQZ-KI-GVf" firstAttribute="trailing" secondItem="rKZ-74-nE1" secondAttribute="trailing" id="OXz-Ul-5pN"/>
                             <constraint firstItem="BrB-h1-WRS" firstAttribute="bottom" secondItem="U0K-SW-4ec" secondAttribute="bottom" id="VpT-BR-CcM"/>
                             <constraint firstItem="BrB-h1-WRS" firstAttribute="trailing" secondItem="U0K-SW-4ec" secondAttribute="trailing" id="XyZ-9z-H8e"/>
+                            <constraint firstItem="rKZ-74-nE1" firstAttribute="centerX" secondItem="U0K-SW-4ec" secondAttribute="centerX" id="d4m-eg-lBp"/>
+                            <constraint firstItem="rKZ-74-nE1" firstAttribute="leading" secondItem="fQZ-KI-GVf" secondAttribute="leading" id="oh4-On-oWk"/>
                             <constraint firstItem="BrB-h1-WRS" firstAttribute="top" secondItem="U0K-SW-4ec" secondAttribute="top" id="rJc-2c-zQA"/>
                             <constraint firstAttribute="trailing" secondItem="1Jn-PA-wRa" secondAttribute="trailing" id="t6t-sw-xjo"/>
                         </constraints>
                     </view>
                     <connections>
                         <outlet property="distanceLabel" destination="vEY-gu-i8l" id="mnX-bE-vtE"/>
+                        <outlet property="gameMenuStack" destination="rKZ-74-nE1" id="c1m-Wk-LS7"/>
+                        <outlet property="groupStack" destination="ORV-OH-myF" id="H3h-ue-G8e"/>
                         <outlet property="powerLabel" destination="fOI-IG-ezZ" id="Ni7-Wu-Bbb"/>
+                        <outlet property="replaceTheBasketButton" destination="Rz9-bP-OGW" id="CXl-Q4-UGc"/>
                         <outlet property="sceneView" destination="BrB-h1-WRS" id="5nT-qQ-ynl"/>
-                        <outlet property="stackGroup" destination="ORV-OH-myF" id="bY1-ns-FrA"/>
+                        <outlet property="startNewGameButton" destination="OPz-g0-EIm" id="Mtt-a6-9Ow"/>
                         <outlet property="textLabel" destination="JcV-3h-RUc" id="Bec-a5-R66"/>
                     </connections>
                 </viewController>
