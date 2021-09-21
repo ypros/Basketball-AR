@@ -152,6 +152,7 @@ class ViewController: UIViewController, ARSCNViewDelegate, SCNPhysicsContactDele
     
     }
     
+    // MARK: - Node funcs
     private func getBasketNode() -> SCNNode {
         let scene = SCNScene(named: "Basket.scn", inDirectory: "art.scnassets")!
         
